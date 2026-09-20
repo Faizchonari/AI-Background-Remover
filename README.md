@@ -13,31 +13,14 @@
 
 **AI Background Remover** is a standalone Windows desktop application designed to remove image backgrounds with hair-strand precision. Powered by state-of-the-art vision models including **BiRefNet (Bilateral Reference Network)** and **RMBG**, the application runs entirely on your local machine with **zero cloud dependencies**, ensuring total data privacy.
 
-```text
-+-----------------------------------------------------------------------------------------------+
-|  AI Background Remover v1.0.0                                                       [_][O][X] |
-+-----------------------------------------------------------------------------------------------+
-|  +-------------------------------------------------------------+  +-------------------------+ |
-|  | Queue: 4 images                                             |  | Model & Output Settings | |
-|  | +---------------------------------------------------------+ |  |                         | |
-|  | | [IMG] portrait_1.jpg  | 800x1000 | [Completed] [100%] |X| |  | Model:                  | |
-|  | | [IMG] portrait_2.jpg  | 900x900  | [Completed] [100%] |X| |  | [ BiRefNet Portrait  v] | |
-|  | | [IMG] product_bag.png | 1200x800 | [Processing] [ 45%] |X| |  |                         | |
-|  | | [IMG] landscape.webp  | 1920x1080| [Queued]    [  0%] |X| |  | Output Format:           | |
-|  | +---------------------------------------------------------+ |  | [ Transparent PNG   v] | |
-|  |                                                             |  |                         | |
-|  | [ Drag & Drop Images Here or Click "Select Images" ]        |  | Output Directory:       | |
-|  |                                                             |  | C:\Users\...\Pictures   | |
-|  | [ Select Images ]   [ Clear Completed ]   [ Open Output ]   |  | [ Select Folder ]       | |
-|  +-------------------------------------------------------------+  +-------------------------+ |
-|                                                                                               |
-|  [========================================] 50% Overall Progress                              |
-|  [ Start Processing ]             [ Cancel Processing ]             [ Settings ] [ Models ]  |
-+-----------------------------------------------------------------------------------------------+
-|  Split-View Preview:  Original Image <---[ Slider ]---> Transparent Output (Checkerboard)    |
-|  Dimensions: 800x1000 px  |  Inference Time: 32.8s  |  Active Device: CPU (6 threads)         |
-+-----------------------------------------------------------------------------------------------+
-```
+<p align="center">
+  <img src="screenshots/app_main_window.png" alt="AI Background Remover - Main Window" width="850">
+</p>
+
+### Interactive Before/After Split Preview
+<p align="center">
+  <img src="screenshots/preview_side_by_side.png" alt="Side-by-Side Comparison Preview" width="850">
+</p>
 
 ---
 
