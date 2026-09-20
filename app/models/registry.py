@@ -4,6 +4,7 @@ Manages registration, discovery, metadata retrieval, installation status,
 and factory instantiation of background removal AI models.
 """
 
+import json
 from pathlib import Path
 import shutil
 import sys
@@ -30,8 +31,9 @@ class ModelRegistry:
         self._registry: dict[str, ModelMetadata] = {}
         self._factories: dict[str, Type[BackgroundRemovalModel]] = {}
 
-        # Register standard known models
+        # Register standard known models (local and cloud)
         self._register_default_models()
+        self._register_cloud_models()
         self.refresh_installed_status()
 
     def _register_default_models(self):
@@ -120,6 +122,54 @@ class ModelRegistry:
             )
         )
 
+    def _register_cloud_models(self):
+        """Load and register cloud models from config/cloud_providers.json."""
+        config_path = Path(__file__).resolve().parent.parent.parent / "config" / "cloud_providers.json"
+        if not config_path.is_file():
+            return
+
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            provider_endpoints = {
+                p.get("provider_id"): p.get("default_endpoint", "")
+                for p in data.get("providers", [])
+            }
+
+            for cm in data.get("cloud_models", []):
+                p_id = cm.get("provider_id", "huggingface")
+                def_endpoint = provider_endpoints.get(p_id, "")
+                endpoint_val = cm.get("endpoint_url") or def_endpoint or cm.get("endpoint_configuration", {}).get("api_name", "/predict")
+
+                meta = ModelMetadata(
+                    model_id=cm["model_id"],
+                    display_name=cm["display_name"],
+                    description=cm.get("description", ""),
+                    category=cm.get("category", "Portrait / Hair"),
+                    version=cm.get("version", "1.0.0"),
+                    minimum_ram=0.0,
+                    recommended_ram=0.0,
+                    gpu_requirements="Runs on remote cloud GPU.",
+                    supported_devices=cm.get("supported_devices", ["Cloud GPU"]),
+                    model_size=cm.get("model_size", "Remote"),
+                    input_resolution=(1024, 1024),
+                    download_source="",
+                    checksum="",
+                    license_information=cm.get("license", "Open Source"),
+                    installed_status=True,
+                    local_or_cloud="cloud",
+                    provider=cm.get("provider", "Hugging Face"),
+                    cloud_endpoint=endpoint_val,
+                    requires_internet=cm.get("internet_required", True),
+                    requires_authentication=cm.get("requires_authentication", False),
+                    privacy_information=cm.get("privacy_information", ""),
+                    free_available=cm.get("free_available", True),
+                )
+                self.register(meta)
+        except Exception:
+            pass
+
     def register(
         self,
         metadata: ModelMetadata,
@@ -143,17 +193,35 @@ class ModelRegistry:
         """Return list of all registered models."""
         return list(self._registry.values())
 
+    def list_local(self) -> list[ModelMetadata]:
+        """Return list of all local models."""
+        return [m for m in self._registry.values() if m.local_or_cloud == "local"]
+
+    def list_cloud(self) -> list[ModelMetadata]:
+        """Return list of all cloud models."""
+        return [m for m in self._registry.values() if m.local_or_cloud == "cloud"]
+
+    def is_cloud_model(self, model_id: str) -> bool:
+        """Check if a model ID corresponds to a cloud model."""
+        meta = self._registry.get(model_id)
+        return meta is not None and meta.local_or_cloud == "cloud"
+
     def list_by_category(self, category: str) -> list[ModelMetadata]:
         """Return models belonging to a specific category."""
         return [m for m in self._registry.values() if m.category.lower() == category.lower()]
 
     def get_installed(self) -> list[ModelMetadata]:
-        """Return models currently downloaded and ready to use."""
+        """Return models currently downloaded and ready to use (excluding cloud models)."""
         self.refresh_installed_status()
-        return [m for m in self._registry.values() if m.installed_status]
+        return [m for m in self._registry.values() if m.installed_status and m.local_or_cloud == "local"]
 
     def _check_installed(self, model_id: str) -> bool:
-        """Check if model files exist in local storage."""
+        """Check if model files exist in local storage (or is cloud model)."""
+        meta = self._registry.get(model_id)
+        if meta and meta.local_or_cloud == "cloud":
+            meta.installed_status = True
+            return True
+
         model_dir = self.storage_dir / model_id
         is_installed = False
         if model_dir.is_dir():
@@ -161,8 +229,8 @@ class ModelRegistry:
             files = [f for f in model_dir.iterdir() if f.is_file()]
             is_installed = len(files) > 0
 
-        if model_id in self._registry:
-            self._registry[model_id].installed_status = is_installed
+        if meta:
+            meta.installed_status = is_installed
         return is_installed
 
     def refresh_installed_status(self) -> None:
@@ -172,12 +240,16 @@ class ModelRegistry:
 
     def delete_model(self, model_id: str) -> bool:
         """Delete downloaded model files from local storage."""
+        meta = self._registry.get(model_id)
+        if meta and meta.local_or_cloud == "cloud":
+            return False  # Cloud models cannot be deleted from disk
+
         model_dir = self.storage_dir / model_id
         if model_dir.is_dir():
             try:
                 shutil.rmtree(model_dir)
-                if model_id in self._registry:
-                    self._registry[model_id].installed_status = False
+                if meta:
+                    meta.installed_status = False
                 return True
             except Exception:
                 return False

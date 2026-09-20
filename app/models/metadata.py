@@ -28,12 +28,23 @@ class ModelMetadata:
     checksum: str = ""  # Expected SHA256 or commit hash
     license_information: str = "Open Source"
     installed_status: bool = False
+    # Cloud fields
+    local_or_cloud: str = "local"  # "local" or "cloud"
+    provider: str = "Local"  # "Local", "Hugging Face", "Custom API", etc.
+    cloud_endpoint: str = ""
+    requires_internet: bool = False
+    requires_authentication: bool = False
+    privacy_information: str = "Local inference. Images never leave your computer."
+    free_available: bool = True
 
     def compute_compatibility(self, sys_info: "SystemInfo") -> str:
         """Determine system compatibility based on host hardware specs.
 
-        Returns one of: 'Recommended', 'Good', 'Heavy', or 'Unsupported'.
+        Returns one of: 'Recommended', 'Good', 'Heavy', 'Available (Cloud)', or 'Unsupported'.
         """
+        if self.local_or_cloud == "cloud":
+            return "Available (Cloud GPU)"
+
         total_ram = sys_info.ram_total_gb
         avail_ram = sys_info.ram_available_gb
         has_cuda = sys_info.cuda_available
@@ -81,4 +92,11 @@ class ModelMetadata:
             "checksum": self.checksum,
             "license_information": self.license_information,
             "installed_status": self.installed_status,
+            "local_or_cloud": self.local_or_cloud,
+            "provider": self.provider,
+            "cloud_endpoint": self.cloud_endpoint,
+            "requires_internet": self.requires_internet,
+            "requires_authentication": self.requires_authentication,
+            "privacy_information": self.privacy_information,
+            "free_available": self.free_available,
         }

@@ -40,6 +40,9 @@ class RecommendationResult:
     recommended_device: str  # "CPU" or "GPU"
     expected_performance: str
     suitable_alternatives: list[str] = field(default_factory=list)
+    recommended_backend: str = "Local"  # "Local" or "Cloud"
+    backend_reason: str = "Local Processing Recommended: Your computer can run the selected model locally. Images remain on your computer."
+    cloud_alternative_available: bool = True
 
     def to_dict(self) -> dict:
         return {
@@ -50,6 +53,9 @@ class RecommendationResult:
             "recommended_device": self.recommended_device,
             "expected_performance": self.expected_performance,
             "suitable_alternatives": self.suitable_alternatives,
+            "recommended_backend": self.recommended_backend,
+            "backend_reason": self.backend_reason,
+            "cloud_alternative_available": self.cloud_alternative_available,
         }
 
 
@@ -266,6 +272,20 @@ class ModelRecommendationEngine:
 
         alternatives = [p.name for p in compatible_profiles if p.id != selected_profile.id]
 
+        # Determine backend recommendation (Local vs Cloud)
+        if total_ram < 4.0:
+            rec_backend = "Cloud"
+            backend_reason = (
+                "Cloud Processing Available: Cloud processing can provide an alternative when "
+                "local processing is slow. Images will be uploaded to the selected provider."
+            )
+        else:
+            rec_backend = "Local"
+            backend_reason = (
+                "Local Processing Recommended: Your computer can run the selected model locally. "
+                "Images remain on your computer."
+            )
+
         return RecommendationResult(
             recommended_model=selected_profile.name,
             model_id=selected_profile.id,
@@ -273,5 +293,8 @@ class ModelRecommendationEngine:
             reason=reason,
             recommended_device=rec_device,
             expected_performance=expected_perf,
-            suitable_alternatives=alternatives
+            suitable_alternatives=alternatives,
+            recommended_backend=rec_backend,
+            backend_reason=backend_reason,
+            cloud_alternative_available=True
         )

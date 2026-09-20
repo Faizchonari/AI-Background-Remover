@@ -87,12 +87,19 @@ class ModelCard(QFrame):
         layout.addWidget(desc)
 
         # Hardware requirements
-        hw_text = (
-            f"Hardware Requirements: Min {self.metadata.minimum_ram:.0f} GB RAM "
-            f"(Recommended: {self.metadata.recommended_ram:.0f} GB)  •  "
-            f"Resolution: {self.metadata.input_resolution[0]}x{self.metadata.input_resolution[1]}  •  "
-            f"License: {self.metadata.license_information}"
-        )
+        if self.metadata.local_or_cloud == "cloud":
+            hw_text = (
+                f"Execution: Cloud Server (GPU Accelerated)  •  "
+                f"Requires Internet: Yes  •  Provider: {self.metadata.provider}  •  "
+                f"License: {self.metadata.license_information}"
+            )
+        else:
+            hw_text = (
+                f"Hardware Requirements: Min {self.metadata.minimum_ram:.0f} GB RAM "
+                f"(Recommended: {self.metadata.recommended_ram:.0f} GB)  •  "
+                f"Resolution: {self.metadata.input_resolution[0]}x{self.metadata.input_resolution[1]}  •  "
+                f"License: {self.metadata.license_information}"
+            )
         hw_lbl = QLabel(hw_text)
         hw_lbl.setStyleSheet("color: #64748B; font-size: 11px;")
         hw_lbl.setWordWrap(True)
@@ -109,7 +116,7 @@ class ModelCard(QFrame):
 
         # Compatibility
         comp = self.metadata.compute_compatibility(self.sys_info)
-        comp_color = "#4ADE80" if "Recommended" in comp or "Good" in comp else "#F59E0B"
+        comp_color = "#4ADE80" if "Recommended" in comp or "Good" in comp or "Cloud" in comp else "#F59E0B"
         comp_lbl = QLabel(f"System compatibility: <b>{comp}</b>")
         comp_lbl.setStyleSheet(f"color: {comp_color}; font-size: 12px;")
         status_row.addWidget(comp_lbl)
@@ -156,7 +163,10 @@ class ModelCard(QFrame):
         layout.addLayout(self.btn_layout)
 
     def _update_status_badge(self):
-        if self.download_mgr.is_downloading(self.metadata.model_id):
+        if self.metadata.local_or_cloud == "cloud":
+            self.status_lbl.setText("Status: Available (Cloud)")
+            self.status_lbl.setStyleSheet("color: #38BDF8; font-weight: 700; font-size: 12px;")
+        elif self.download_mgr.is_downloading(self.metadata.model_id):
             self.status_lbl.setText("Status: Downloading")
             self.status_lbl.setStyleSheet("color: #F59E0B; font-weight: 700; font-size: 12px;")
         elif self.metadata.installed_status:
@@ -175,6 +185,16 @@ class ModelCard(QFrame):
 
     def _build_action_buttons(self):
         self._clear_btn_layout()
+
+        # Cloud Model Action: Instant Use (no disk download needed)
+        if self.metadata.local_or_cloud == "cloud":
+            use_btn = QPushButton("Use Cloud Model")
+            use_btn.setObjectName("actionBtn")
+            use_btn.setStyleSheet("background-color: #059669; color: white; padding: 6px 16px; font-weight: 700;")
+            use_btn.clicked.connect(lambda: self.use_model_clicked.emit(self.metadata.model_id))
+            self.btn_layout.addWidget(use_btn)
+            self.btn_layout.addStretch()
+            return
 
         if self.download_mgr.is_downloading(self.metadata.model_id):
             cancel_btn = QPushButton("Cancel Download")
@@ -332,9 +352,12 @@ class ModelManagerDialog(QDialog):
         container = QWidget()
         self.card_layout = QVBoxLayout(container)
         self.card_layout.setContentsMargins(0, 0, 10, 0)
-        self.card_layout.setSpacing(12)
+        # 1. LOCAL MODELS SECTION
+        local_header = QLabel("LOCAL MODELS (Runs 100% Offline on Your PC)")
+        local_header.setStyleSheet("font-size: 13px; font-weight: 800; color: #4ADE80; margin-top: 4px; margin-bottom: 2px;")
+        self.card_layout.addWidget(local_header)
 
-        for meta in self.registry.list_all():
+        for meta in self.registry.list_local():
             card = ModelCard(
                 metadata=meta,
                 sys_info=self.sys_info,
@@ -346,6 +369,26 @@ class ModelManagerDialog(QDialog):
             card.use_model_clicked.connect(self._on_use_model)
             self.cards[meta.model_id] = card
             self.card_layout.addWidget(card)
+
+        # 2. CLOUD MODELS SECTION
+        cloud_models = self.registry.list_cloud()
+        if cloud_models:
+            cloud_header = QLabel("CLOUD MODELS (Remote Inference • Requires Internet)")
+            cloud_header.setStyleSheet("font-size: 13px; font-weight: 800; color: #38BDF8; margin-top: 14px; margin-bottom: 2px;")
+            self.card_layout.addWidget(cloud_header)
+
+            for meta in cloud_models:
+                card = ModelCard(
+                    metadata=meta,
+                    sys_info=self.sys_info,
+                    download_mgr=self.download_mgr,
+                    registry=self.registry,
+                    bridge=self.bridge,
+                    parent=self
+                )
+                card.use_model_clicked.connect(self._on_use_model)
+                self.cards[meta.model_id] = card
+                self.card_layout.addWidget(card)
 
         self.card_layout.addStretch()
         scroll.setWidget(container)

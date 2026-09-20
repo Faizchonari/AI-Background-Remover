@@ -351,6 +351,10 @@ class InteractivePreviewWidget(QFrame):
         self.dims_lbl.setStyleSheet("color: #38BDF8; font-size: 11px; font-weight: 600;")
         toolbar.addWidget(self.dims_lbl)
 
+        self.backend_lbl = QLabel("")
+        self.backend_lbl.setStyleSheet("color: #F59E0B; font-size: 11px; font-weight: 600;")
+        toolbar.addWidget(self.backend_lbl)
+
         self.model_lbl = QLabel("")
         self.model_lbl.setStyleSheet("color: #94A3B8; font-size: 11px;")
         toolbar.addWidget(self.model_lbl)
@@ -383,6 +387,7 @@ class InteractivePreviewWidget(QFrame):
         if not item:
             self.canvas.set_images(None, None)
             self.dims_lbl.setText("")
+            self.backend_lbl.setText("")
             self.model_lbl.setText("")
             self.time_lbl.setText("")
             return
@@ -393,6 +398,11 @@ class InteractivePreviewWidget(QFrame):
             self.dims_lbl.setText(f"{item.dimensions[0]} × {item.dimensions[1]} px")
         else:
             self.dims_lbl.setText("")
+
+        if getattr(item, "backend_used", None):
+            self.backend_lbl.setText(f"[{item.backend_used}]")
+        else:
+            self.backend_lbl.setText("")
 
         if item.model_name:
             self.model_lbl.setText(f"Model: {item.model_name}")

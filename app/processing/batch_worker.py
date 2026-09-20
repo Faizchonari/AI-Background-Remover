@@ -22,6 +22,7 @@ from PySide6.QtCore import QThread, Signal
 from PySide6.QtGui import QPixmap
 
 from app.models.base_model import BackgroundRemovalModel
+from app.processing.backends.base import ProcessingBackend
 from app.utils.logger import get_logger
 
 logger = get_logger()
@@ -40,6 +41,7 @@ class QueueItem:
     thumbnail: Optional[QPixmap] = None
     processing_time_s: Optional[float] = None
     model_name: Optional[str] = None
+    backend_used: Optional[str] = None
 
     @classmethod
     def from_path(cls, path: str | Path) -> "QueueItem":
@@ -66,7 +68,7 @@ class QueueItem:
 
 
 class BatchProcessingWorker(QThread):
-    """Background worker executing batch background removal."""
+    """Background worker executing batch background removal across Local or Cloud backends."""
 
     item_started = Signal(int, str)  # index, filename
     item_progress = Signal(int, float)  # index, percent
@@ -79,7 +81,10 @@ class BatchProcessingWorker(QThread):
         items: list[QueueItem],
         output_dir: Path | str,
         output_format: str,
-        model: BackgroundRemovalModel,
+        model: Optional[BackgroundRemovalModel] = None,
+        backend: Optional[ProcessingBackend] = None,
+        model_id: Optional[str] = None,
+        model_name: Optional[str] = None,
         parent=None
     ):
         super().__init__(parent)
@@ -87,12 +92,19 @@ class BatchProcessingWorker(QThread):
         self.output_dir = Path(output_dir)
         self.output_format = output_format  # "PNG (Transparent)", "JPG (White Background)", "WEBP (Transparent)"
         self.model = model
+        self.backend = backend
+        self.model_id = model_id or (self.model.metadata.model_id if self.model else "birefnet-portrait")
+        self.model_display_name = model_name or (
+            self.model.get_model_info().display_name if self.model else "AI Background Remover"
+        )
         self._cancel_requested = False
         self.last_error: str = ""
 
     def cancel(self):
         """Request cancellation of the batch queue."""
         self._cancel_requested = True
+        if self.backend:
+            self.backend.cancel()
         logger.info("Batch processing cancellation requested by user.")
 
     def run(self):
@@ -110,26 +122,28 @@ class BatchProcessingWorker(QThread):
         fail_count = 0
         self.last_error = ""
 
+        backend_name = self.backend.backend_name if self.backend else "Local Processing"
         logger.info(
             f"Batch processing started: {len(self.items)} image(s) to process. "
-            f"Output format: '{self.output_format}', Model: '{self.model.get_model_info().display_name}'"
+            f"Backend: '{backend_name}', Output format: '{self.output_format}', Model: '{self.model_display_name}'"
         )
 
-        # 1. Ensure model is loaded once before batch (reuse across all images)
-        try:
-            if not self.model.is_loaded:
-                logger.info(f"Model not yet in memory. Loading once on device '{self.model.device}'...")
-                self.model.load(self.model.device)
-        except Exception as e:
-            tb = traceback.format_exc()
-            self.last_error = f"Model load failure: {e}\n\n{tb}"
-            logger.error(f"Failed to load model '{self.model.get_model_info().display_name}':\n{tb}")
-            for idx, item in enumerate(self.items):
-                item.status = "Failed"
-                item.error_message = str(e)
-                self.item_failed.emit(idx, str(e))
-            self.batch_finished.emit(0, len(self.items), self.last_error)
-            return
+        # 1. If using a local model directly, ensure loaded once before batch
+        if self.model is not None and not self.backend:
+            try:
+                if not self.model.is_loaded:
+                    logger.info(f"Model not yet in memory. Loading once on device '{self.model.device}'...")
+                    self.model.load(self.model.device)
+            except Exception as e:
+                tb = traceback.format_exc()
+                self.last_error = f"Model load failure: {e}\n\n{tb}"
+                logger.error(f"Failed to load model '{self.model_display_name}':\n{tb}")
+                for idx, item in enumerate(self.items):
+                    item.status = "Failed"
+                    item.error_message = str(e)
+                    self.item_failed.emit(idx, str(e))
+                self.batch_finished.emit(0, len(self.items), self.last_error)
+                return
 
         # 2. Process each image in the queue
         for idx, item in enumerate(self.items):
@@ -155,7 +169,10 @@ class BatchProcessingWorker(QThread):
                     orig_rgb = raw_img.convert("RGB")
 
                 # Infer background mask (guaranteed to preserve original dimensions)
-                rgba_result, _ = self.model.process_image(orig_rgb)
+                if self.backend:
+                    rgba_result, _ = self.backend.process_image(orig_rgb, model_id=self.model_id)
+                else:
+                    rgba_result, _ = self.model.process_image(orig_rgb)
 
                 # Ensure dimensions strictly preserved
                 if rgba_result.size != (orig_w, orig_h):
@@ -195,18 +212,23 @@ class BatchProcessingWorker(QThread):
                 elapsed = time.time() - t_start
                 item.output_path = target_path
                 item.processing_time_s = elapsed
-                item.model_name = self.model.get_model_info().display_name
+                item.model_name = self.model_display_name
+                item.backend_used = self.backend.backend_name if self.backend else "Local Processing"
                 item.status = "Completed"
                 success_count += 1
 
                 logger.info(
                     f"Completed ({idx + 1}/{len(self.items)}): '{item.filename}' in {elapsed:.2f}s "
-                    f"-> '{target_path.name}' ({orig_w}x{orig_h})"
+                    f"-> '{target_path.name}' ({orig_w}x{orig_h}) via [{item.backend_used}]"
                 )
 
                 # Clean temporary image objects
                 del orig_rgb, rgba_result, final_image
                 gc.collect()
+
+                # Polite delay between cloud batch requests to protect free tier rate limits
+                if self.backend and self.backend.is_cloud and idx + 1 < len(self.items):
+                    time.sleep(0.3)
 
                 self.item_completed.emit(idx, str(target_path))
 

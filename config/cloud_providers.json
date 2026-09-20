@@ -1,0 +1,112 @@
+{
+  "version": "1.0.0",
+  "providers": [
+    {
+      "provider_id": "huggingface",
+      "display_name": "Hugging Face Spaces",
+      "type": "gradio_space",
+      "website": "https://huggingface.co",
+      "api_documentation": "https://huggingface.co/docs/hub/spaces-overview",
+      "free_available": true,
+      "plan_type": "Free / Limited",
+      "authentication_required": false,
+      "auth_token_name": "HF_TOKEN",
+      "default_endpoint": "https://faizchonari-birefnet-portrait.hf.space",
+      "privacy_url": "https://huggingface.co/privacy",
+      "terms_url": "https://huggingface.co/terms-of-service",
+      "description": "ZeroGPU-accelerated or CPU-hosted Hugging Face Space running BiRefNet Portrait background removal.",
+      "status": "Available",
+      "supported_models": [
+        "birefnet-portrait-cloud"
+      ]
+    },
+    {
+      "provider_id": "custom_api",
+      "display_name": "Custom Cloud API",
+      "type": "rest_api",
+      "website": "",
+      "api_documentation": "",
+      "free_available": true,
+      "plan_type": "User Configured",
+      "authentication_required": false,
+      "auth_token_name": "CUSTOM_API_KEY",
+      "default_endpoint": "",
+      "privacy_url": "",
+      "terms_url": "",
+      "description": "Connect to a custom self-hosted HTTPS API endpoint with customizable authentication headers.",
+      "status": "Configurable",
+      "supported_models": [
+        "custom-api-model"
+      ]
+    },
+    {
+      "provider_id": "replicate",
+      "display_name": "Replicate",
+      "type": "commercial_api",
+      "website": "https://replicate.com",
+      "api_documentation": "https://replicate.com/docs",
+      "free_available": false,
+      "plan_type": "Paid",
+      "authentication_required": true,
+      "auth_token_name": "REPLICATE_API_TOKEN",
+      "default_endpoint": "https://api.replicate.com/v1",
+      "privacy_url": "https://replicate.com/privacy",
+      "terms_url": "https://replicate.com/terms",
+      "description": "Commercial cloud inference platform. Requires paid API token.",
+      "status": "Coming soon",
+      "supported_models": []
+    }
+  ],
+  "cloud_models": [
+    {
+      "model_id": "birefnet-portrait-cloud",
+      "display_name": "BiRefNet Portrait (Cloud)",
+      "provider": "Hugging Face",
+      "provider_id": "huggingface",
+      "category": "Portrait / Hair",
+      "version": "1.0.0",
+      "description": "Cloud-hosted BiRefNet model running on Hugging Face Spaces (ZeroGPU / CPU). Preserves full image dimensions.",
+      "task": "image-matting",
+      "input_types": ["image/jpeg", "image/png", "image/webp"],
+      "output_types": ["image/png"],
+      "requires_authentication": false,
+      "free_available": true,
+      "internet_required": true,
+      "local_or_cloud": "cloud",
+      "endpoint_configuration": {
+        "api_name": "/predict",
+        "method": "POST"
+      },
+      "supported_devices": ["Cloud GPU (ZeroGPU)", "Cloud CPU"],
+      "model_size": "Remote (~950 MB on server)",
+      "license": "Apache 2.0",
+      "privacy_information": "Images are uploaded over HTTPS to the Hugging Face Space for processing. The application does not retain images on any third-party storage. Temporary files are deleted immediately.",
+      "status": "Available"
+    },
+    {
+      "model_id": "custom-api-model",
+      "display_name": "Custom API Model",
+      "provider": "Custom API",
+      "provider_id": "custom_api",
+      "category": "General Objects",
+      "version": "1.0.0",
+      "description": "User-configured remote model accessed via custom HTTPS REST API.",
+      "task": "image-matting",
+      "input_types": ["image/jpeg", "image/png", "image/webp"],
+      "output_types": ["image/png"],
+      "requires_authentication": false,
+      "free_available": true,
+      "internet_required": true,
+      "local_or_cloud": "cloud",
+      "endpoint_configuration": {
+        "api_name": "/api/remove-background",
+        "method": "POST"
+      },
+      "supported_devices": ["Remote Server"],
+      "model_size": "Remote",
+      "license": "User Defined",
+      "privacy_information": "Images are transmitted to your configured HTTPS endpoint. Please ensure you trust the endpoint provider.",
+      "status": "Configurable"
+    }
+  ]
+}

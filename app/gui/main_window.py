@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QComboBox, QFrame,
     QFileDialog, QProgressBar, QMessageBox, QSplitter,
-    QStatusBar, QLineEdit
+    QStatusBar, QLineEdit, QCheckBox
 )
 
 from app.system.system_info import SystemInfo, get_system_info
@@ -37,6 +37,7 @@ from app.models.birefnet_portrait import BiRefNetPortraitModel
 from app.models.base_model import BackgroundRemovalModel
 from app.downloads.download_manager import DownloadManager
 from app.processing.batch_worker import BatchProcessingWorker, QueueItem
+from app.processing.processing_manager import ProcessingManager
 
 
 
@@ -83,7 +84,16 @@ class MainWindow(QMainWindow):
         self.worker: Optional[BatchProcessingWorker] = None
         self.active_model_instance: Optional[BackgroundRemovalModel] = None
 
-        # 4. Initialize UI
+        # 4. Processing Manager (Local + Cloud + Automatic)
+        self.processing_mgr = ProcessingManager(
+            config_mgr=self.config_mgr,
+            registry=self.registry,
+            sys_info=self.sys_info,
+            rec_engine=self.rec_engine,
+            privacy_consent_callback=self._prompt_cloud_privacy_consent
+        )
+
+        # 5. Initialize UI
         self._init_ui()
 
     def _init_ui(self):
@@ -188,25 +198,49 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(14, 10, 14, 10)
         layout.setSpacing(12)
 
+        # 0. Processing Mode Selector
+        mode_lbl = QLabel("Mode:")
+        mode_lbl.setStyleSheet("font-weight: 700; color: #CBD5E1;")
+        layout.addWidget(mode_lbl)
+
+        self.mode_combo = QComboBox()
+        self.mode_combo.addItem("Local Processing", "local")
+        self.mode_combo.addItem("Cloud Processing", "cloud")
+        self.mode_combo.addItem("Automatic", "automatic")
+        curr_mode = self.config_mgr.get("processing_mode", "local").lower()
+        idx_m = self.mode_combo.findData(curr_mode)
+        if idx_m >= 0:
+            self.mode_combo.setCurrentIndex(idx_m)
+        self.mode_combo.currentIndexChanged.connect(self._on_mode_changed)
+        layout.addWidget(self.mode_combo)
+
+        # Cloud Status Button (clickable indicator)
+        self.cloud_status_btn = QPushButton("● Cloud Available")
+        self.cloud_status_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #064E3B;
+                color: #34D399;
+                font-weight: 700;
+                font-size: 11px;
+                padding: 4px 8px;
+                border-radius: 4px;
+                border: 1px solid #059669;
+            }
+            QPushButton:hover { background-color: #047857; color: white; }
+        """)
+        self.cloud_status_btn.clicked.connect(self._show_cloud_status_dialog)
+        self.cloud_status_btn.setVisible(curr_mode in ("cloud", "automatic"))
+        layout.addWidget(self.cloud_status_btn)
+
+        layout.addSpacing(6)
+
         # 1. Model Selection
         model_lbl = QLabel("Model:")
         model_lbl.setStyleSheet("font-weight: 700; color: #CBD5E1;")
         layout.addWidget(model_lbl)
 
         self.model_combo = QComboBox()
-        for meta in self.registry.list_all():
-            self.model_combo.addItem(f"{meta.display_name}  [{meta.category}]", meta.model_id)
-
-        # Select recommended or remembered model
-        target_model = self.rec_result.model_id
-        if self.config_mgr.get("remember_selected_model", True):
-            saved_model = self.config_mgr.get("default_model")
-            if saved_model and self.model_combo.findData(saved_model) >= 0:
-                target_model = saved_model
-
-        idx = self.model_combo.findData(target_model)
-        if idx >= 0:
-            self.model_combo.setCurrentIndex(idx)
+        self._populate_model_combo()
         self.model_combo.currentIndexChanged.connect(self._on_model_changed)
         layout.addWidget(self.model_combo)
 
@@ -328,11 +362,102 @@ class MainWindow(QMainWindow):
 
         return bar
 
+    def _on_mode_changed(self):
+        new_mode = self.mode_combo.currentData()
+        self.processing_mgr.set_mode(new_mode)
+        self.cloud_status_btn.setVisible(new_mode in ("cloud", "automatic"))
+        self._populate_model_combo()
+        self._update_status_bar()
+
+    def _populate_model_combo(self):
+        """Populate model dropdown based on current processing mode."""
+        self.model_combo.blockSignals(True)
+        prev_data = self.model_combo.currentData()
+        self.model_combo.clear()
+
+        curr_mode = self.processing_mgr.get_mode()
+        if curr_mode == "cloud":
+            models = self.registry.list_cloud()
+        elif curr_mode == "local":
+            models = self.registry.list_local()
+        else:
+            models = self.registry.list_all()
+
+        for meta in models:
+            tag = "[Cloud]" if meta.local_or_cloud == "cloud" else f"[{meta.category}]"
+            self.model_combo.addItem(f"{meta.display_name}  {tag}", meta.model_id)
+
+        # Restore previous selection if still available
+        if prev_data and self.model_combo.findData(prev_data) >= 0:
+            self.model_combo.setCurrentIndex(self.model_combo.findData(prev_data))
+        elif self.model_combo.count() > 0:
+            self.model_combo.setCurrentIndex(0)
+
+        self.model_combo.blockSignals(False)
+        self._check_model_installation_state()
+
+    def _show_cloud_status_dialog(self):
+        """Display detailed cloud provider status and connectivity."""
+        status = self.processing_mgr.check_cloud_status()
+        is_conn = status.get("connected", False)
+
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("Cloud Processing Status")
+        if is_conn:
+            msg_box.setIcon(QMessageBox.Information)
+            header = f"<b>Cloud Status:</b> <span style='color: #4ADE80;'>● Connected</span>"
+        else:
+            msg_box.setIcon(QMessageBox.Warning)
+            header = f"<b>Cloud Status:</b> <span style='color: #F87171;'>● Offline / Unreachable</span>"
+
+        details = (
+            f"{header}<br><br>"
+            f"<b>Provider:</b> {status.get('provider', 'Hugging Face')}<br>"
+            f"<b>Plan:</b> {status.get('plan', 'Free / Limited')}<br>"
+            f"<b>Endpoint:</b> {self.config_mgr.get('cloud_endpoint', 'Default')}<br>"
+            f"<b>Message:</b> {status.get('message', 'N/A')}<br><br>"
+            f"<i>Free-first design: Cloud processing never charges you and uses free community tiers.</i>"
+        )
+        msg_box.setText(details)
+        msg_box.setStandardButtons(QMessageBox.Ok)
+        msg_box.exec()
+
+    def _prompt_cloud_privacy_consent(self) -> bool:
+        """Prompt user for explicit consent before uploading images to the cloud."""
+        msg_box = QMessageBox(self)
+        msg_box.setIcon(QMessageBox.Question)
+        msg_box.setWindowTitle("Cloud Processing Privacy Notice")
+        msg_box.setText(
+            "<b>Cloud Processing</b> uploads your image to a third-party server for AI processing.<br><br>"
+            "Use <b>Local Processing</b> if you do not want your image uploaded."
+        )
+        continue_btn = msg_box.addButton("Continue to Cloud Processing", QMessageBox.AcceptRole)
+        continue_btn.setStyleSheet("background-color: #2563EB; color: white; font-weight: bold; padding: 6px 14px;")
+        local_btn = msg_box.addButton("Use Local Processing", QMessageBox.RejectRole)
+        local_btn.setStyleSheet("background-color: #334155; color: white; padding: 6px 14px;")
+
+        always_ask_cb = QCheckBox("Always ask before uploading images", msg_box)
+        always_ask_cb.setChecked(self.config_mgr.get("cloud_always_ask_upload", True))
+        msg_box.setCheckBox(always_ask_cb)
+
+        msg_box.exec()
+        user_approved = (msg_box.clickedButton() == continue_btn)
+
+        self.config_mgr.set("cloud_always_ask_upload", always_ask_cb.isChecked())
+        if user_approved:
+            self.config_mgr.set("cloud_privacy_acknowledged", True)
+        else:
+            # Switch back to local mode if user declines
+            self.mode_combo.setCurrentIndex(self.mode_combo.findData("local"))
+        self.config_mgr.save()
+        return user_approved
+
     def _update_status_bar(self):
         active_model = self.model_combo.currentText()
         count = len(self.queue_widget.items)
+        mode = self.processing_mgr.get_mode().capitalize()
         self.status_bar.showMessage(
-            f"Ready | Model: {active_model} | Queue: {count} image{'s' if count != 1 else ''} | "
+            f"Ready | Mode: {mode} | Model: {active_model} | Queue: {count} image{'s' if count != 1 else ''} | "
             f"Output: {self.output_dir.name}/"
         )
 
@@ -340,7 +465,10 @@ class MainWindow(QMainWindow):
         """Show or hide the [Download Model] button based on installed status."""
         model_id = self.model_combo.currentData()
         meta = self.registry.get_metadata(model_id)
-        if meta and not meta.installed_status:
+        if meta and meta.local_or_cloud == "cloud":
+            # Cloud models never need local disk download
+            self.download_model_btn.setVisible(False)
+        elif meta and not meta.installed_status:
             self.download_model_btn.setVisible(True)
             self.download_model_btn.setText(f"Download {meta.display_name}")
         else:
@@ -404,29 +532,39 @@ class MainWindow(QMainWindow):
         model_id = self.model_combo.currentData()
         meta = self.registry.get_metadata(model_id)
 
-        # Check model installation
-        if meta and not meta.installed_status:
-            reply = QMessageBox.question(
-                self,
-                "Model Not Downloaded",
-                f"'{meta.display_name}' ({meta.model_size}) must be downloaded before processing.\n\n"
-                "Would you like to open the Model Manager to download it now?",
-                QMessageBox.Yes | QMessageBox.No
-            )
-            if reply == QMessageBox.Yes:
-                self._open_model_manager()
-            return
+        # Resolve active backend (Local or Cloud)
+        active_backend = self.processing_mgr.get_active_backend(model_id)
 
-        # Instantiate or reuse loaded model
-        if self.active_model_instance is None or self.active_model_instance.metadata.model_id != model_id:
-            if self.active_model_instance is not None:
-                self.active_model_instance.unload()
-            model_cls = self.registry.get_model_class(model_id)
-            if model_cls:
-                self.active_model_instance = model_cls(metadata=meta)
-            else:
-                # Fallback to BiRefNet Portrait
-                self.active_model_instance = BiRefNetPortraitModel(metadata=meta)
+        # If Cloud backend: check connection and handle offline fallback prompt
+        if active_backend.is_cloud:
+            is_connected, msg = active_backend.check_connection()
+            if not is_connected:
+                reply = QMessageBox.question(
+                    self,
+                    "Cloud Processing Offline",
+                    f"Cloud processing requires an internet connection.\n\n"
+                    f"Reason: {msg}\n\n"
+                    "Would you like to switch to Local Processing?",
+                    QMessageBox.Yes | QMessageBox.No
+                )
+                if reply == QMessageBox.Yes:
+                    self.mode_combo.setCurrentIndex(self.mode_combo.findData("local"))
+                    return self._start_processing()
+                return
+
+        # If Local backend: check local model installation
+        if not active_backend.is_cloud:
+            if meta and not meta.installed_status:
+                reply = QMessageBox.question(
+                    self,
+                    "Model Not Downloaded",
+                    f"'{meta.display_name}' ({meta.model_size}) must be downloaded before processing.\n\n"
+                    "Would you like to open the Model Manager to download it now?",
+                    QMessageBox.Yes | QMessageBox.No
+                )
+                if reply == QMessageBox.Yes:
+                    self._open_model_manager()
+                return
 
         self.start_btn.setEnabled(False)
         self.cancel_btn.setEnabled(True)
@@ -435,12 +573,14 @@ class MainWindow(QMainWindow):
         self.progress_bar.setValue(0)
         self.progress_text.setText(f"0 / {len(self.queue_widget.items)}")
 
-        # Initialize and launch background worker
+        # Initialize and launch background worker using active backend
         self.worker = BatchProcessingWorker(
             items=self.queue_widget.items,
             output_dir=self.output_dir,
             output_format=self.format_combo.currentText(),
-            model=self.active_model_instance,
+            backend=active_backend,
+            model_id=model_id,
+            model_name=meta.display_name if meta else "AI Model",
             parent=self
         )
         self.worker.item_started.connect(self._on_worker_item_started)

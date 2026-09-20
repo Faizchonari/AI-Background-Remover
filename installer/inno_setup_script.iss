@@ -2,7 +2,7 @@
 ; Builds standard Windows Installer (.exe) for Windows 11 64-bit
 
 #define MyAppName "AI Background Remover"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.2.0"
 #define MyAppPublisher "LocalAI"
 #define MyAppURL "https://github.com/Faizchonari/AI-Background-Remover"
 #define MyAppExeName "AI Background Remover.exe"

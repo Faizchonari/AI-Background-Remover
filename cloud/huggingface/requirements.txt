@@ -1,0 +1,11 @@
+# Dependencies for Hugging Face Spaces Deployment
+gradio>=4.20.0
+torch>=2.2.0
+torchvision>=0.17.0
+transformers>=4.40.0
+timm>=0.9.16
+pillow>=10.2.0
+spaces
+fastapi>=0.110.0
+python-multipart>=0.0.9
+uvicorn>=0.28.0

@@ -77,3 +77,9 @@ Thumbs.db
 
 # GitHub Workflows (requires 'workflow' OAuth scope to push)
 .github/
+
+# Environment & Credential files
+.env
+.env.*
+*.key
+credentials.enc

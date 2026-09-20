@@ -1,6 +1,6 @@
 {
   "app_name": "AI Background Remover",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "default_model": "birefnet-portrait",
   "input_dir": "input",
   "output_dir": "output",
@@ -16,5 +16,24 @@
     "github_profile_url": "https://github.com/Faizchonari",
     "project_repo_url": "https://github.com/Faizchonari/AI-Background-Remover",
     "avatar_path": "assets/developer_avatar.png"
+  },
+  "processing_mode": "local",
+  "cloud_provider": "huggingface",
+  "cloud_endpoint": "https://faizchonari-birefnet-portrait.hf.space",
+  "cloud_always_ask_upload": true,
+  "cloud_privacy_acknowledged": false,
+  "cloud_max_concurrency": 1,
+  "cloud_timeout_seconds": 35,
+  "cloud_usage": {
+    "requests_made": 0,
+    "successful_requests": 0,
+    "failed_requests": 0,
+    "quota_status": "Normal"
+  },
+  "custom_api": {
+    "endpoint": "",
+    "auth_header": "Bearer",
+    "request_format": "multipart",
+    "response_format": "image/png"
   }
 }

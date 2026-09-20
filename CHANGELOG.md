@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-09-20
+
+### Added
+- **Optional Cloud Processing System**:
+  - **Provider-Independent Architecture**: Abstract `ProcessingBackend` interface with `LocalBackend` and `CloudBackend` (`HuggingFaceProvider`, `CustomAPIProvider`, `FutureProvider`).
+  - **Zero-Install Cloud Inference**: Support for free Hugging Face Spaces (Gradio / FastAPI endpoints with ZeroGPU acceleration) and self-hosted custom REST APIs.
+  - **Multi-Mode Support**: Added `Local Processing`, `Cloud Processing`, and `Automatic Mode` (prefer local, fallback to cloud or vice versa).
+  - **Privacy First**: Explicit user confirmation modal dialog before any cloud upload ("Cloud Processing uploads your image to a remote server..."). Configurable "Always ask before uploading images" (default: True). Zero telemetry or analytics.
+  - **Secure Credential Storage**: Hardware-backed Windows Data Protection API (DPAPI via `CryptProtectData` / `CryptUnprotectData`) storing tokens securely in `%LOCALAPPDATA%/AI-Background-Remover/credentials.enc`. Includes safe token masking (`hf_****1234`).
+  - **Cloud Settings Tab**: Comprehensive settings UI for selecting backend provider, configuring endpoints, live connection testing, token management, usage statistics, and custom headers.
+  - **Main Window & Queue Integration**: Clickable cloud status indicator badge, dynamic model selector reflecting active backend, and preview overlay displaying processing backend and elapsed time.
+  - **Model Manager Partitioning**: Separate `LOCAL MODELS` and `CLOUD MODELS` sections with instant activation for cloud models.
+  - **Standalone Cloud Server**: Complete Hugging Face Space project in `cloud/huggingface/` (FastAPI + Gradio with `@spaces.GPU` ZeroGPU support) and REST schemas in `cloud/api/`.
+  - **Documentation**: Comprehensive `docs/cloud-processing.md` guide covering setup, privacy, troubleshooting, and deployment.
+  - **Automated Tests**: Comprehensive test suites for credential encryption, cloud providers, mock HTTP responses, and backend routing.
+
+---
+
 ## [1.1.0] - 2026-09-20
 
 ### Added

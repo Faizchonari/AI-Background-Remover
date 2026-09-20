@@ -3,17 +3,17 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11-brightgreen.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2011%20%7C%2010%20(64--bit)-lightgrey.svg)](https://www.microsoft.com/windows)
-[![Release](https://img.shields.io/badge/Release-v1.1.0-orange.svg)](https://github.com/Faizchonari/AI-Background-Remover/releases)
+[![Release](https://img.shields.io/badge/Release-v1.2.0-orange.svg)](https://github.com/Faizchonari/AI-Background-Remover/releases)
 
-> **Fast, private, and high-precision desktop AI background removal running 100% locally on Windows.**
+> **Fast, private, and high-precision desktop AI background removal running locally on Windows, with optional free Cloud Processing.**
 >
-> *Once the required models and dependencies are installed, image processing can run completely offline.*
+> *Supports 100% offline local processing with BiRefNet & RMBG, plus optional cloud inference via Hugging Face Spaces.*
 
 ---
 
 ## Overview
 
-**AI Background Remover** is a standalone Windows desktop application designed to remove image backgrounds with hair-strand precision. Powered by state-of-the-art vision models including **BiRefNet (Bilateral Reference Network)** and **RMBG**, the application runs entirely on your local machine with **zero cloud dependencies**, ensuring total data privacy.
+**AI Background Remover** is a standalone Windows desktop application designed to remove image backgrounds with hair-strand precision. Powered by state-of-the-art vision models including **BiRefNet (Bilateral Reference Network)** and **RMBG**, the application provides a dual-backend architecture: run 100% locally with zero cloud dependencies for complete data privacy, or connect to optional free cloud endpoints (such as Hugging Face Spaces) for ultra-fast GPU acceleration on low-spec PCs.
 
 <p align="center">
   <img src="screenshots/app_main_window.png" alt="AI Background Remover - Main Window" width="850">
@@ -28,13 +28,15 @@
 
 ## Key Features
 
+- **Dual-Backend Processing**: Seamlessly switch between **Local Processing** (100% offline) and **Cloud Processing** (free Hugging Face Spaces / Custom API), or use **Automatic Mode** for intelligent fallback.
 - **High-Precision Segmentation**: Uses BiRefNet for edge detection around difficult boundaries (fine hair, glass, transparent fabrics, fur).
 - **Batch Processing Queue**: Drag-and-drop or select multiple JPG, JPEG, PNG, and WEBP images.
 - **Resilient Pipeline**: Individual image failures (e.g. corrupted files) are captured gracefully without stopping the batch queue.
 - **Interactive Split-View Preview**: Before/after comparison slider with transparency checkerboard, zoom controls, and fit-to-window.
-- **100% Offline & Private**: All inference and logging occur strictly on your local machine. No telemetry, no cloud uploads. Once models are installed, no internet is required.
-- **Integrated Model Manager**: Atomic chunked downloading with SHA256 integrity verification and model update management.
-- **Recommendation Engine**: Suggests optimal models based on content type and available system hardware.
+- **100% Offline & Private (Local Mode)**: All local inference and logging occur strictly on your local machine. No telemetry, no unexpected uploads.
+- **Privacy-First Cloud Design**: Explicit user confirmation before any image is uploaded, Windows DPAPI hardware-backed token encryption, and zero analytics.
+- **Integrated Model Manager**: Separate Local and Cloud model registries with atomic chunked downloading and SHA256 integrity verification.
+- **Recommendation Engine**: Suggests optimal models and processing backends based on content type and available system hardware.
 - **About Developer Section**: Integrated About Me dialog and Settings tab showcasing developer profile, offline GitHub avatar, and project links.
 - **Diagnostic & Repair Tools**: Built-in dependency manager and hardware inspector to verify and maintain the AI runtime.
 - **Zero-Setup Installer**: Clean Windows installer (`AI-Background-Remover-Setup.exe`) that sets up shortcuts and preserves model weights across updates.
@@ -121,6 +123,7 @@ The application is built local-first:
 - [Installation Guide](docs/installation.md)
 - [System Requirements](docs/system-requirements.md)
 - [Supported Models](docs/models.md)
+- [Optional Cloud Processing](docs/cloud-processing.md)
 - [Offline & Air-Gapped Mode](docs/offline-mode.md)
 - [Troubleshooting & Diagnostics](docs/troubleshooting.md)
 - [Developer Guide](docs/development.md)

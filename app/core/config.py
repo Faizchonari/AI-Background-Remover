@@ -37,7 +37,7 @@ class ConfigManager:
         # Defaults
         self._data = {
             "app_name": "AI Background Remover",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "default_model": "birefnet-portrait",
             "input_dir": str(self.base_dir / "input"),
             "output_dir": str(self.base_dir / "output"),
@@ -64,14 +64,50 @@ class ConfigManager:
             "max_parallel_jobs": 1,
             "memory_safeguard": True,
             "memory_safeguard_threshold_gb": 1.5,
+            # CLOUD PROCESSING
+            "processing_mode": "local",  # "local", "cloud", "automatic"
+            "cloud_provider": "huggingface",
+            "cloud_endpoint": "https://faizchonari-birefnet-portrait.hf.space",
+            "cloud_always_ask_upload": True,
+            "cloud_privacy_acknowledged": False,
+            "cloud_max_concurrency": 1,
+            "cloud_timeout_seconds": 35,
+            "cloud_usage": {
+                "requests_made": 0,
+                "successful_requests": 0,
+                "failed_requests": 0,
+                "quota_status": "Normal"
+            },
+            "custom_api": {
+                "endpoint": "",
+                "auth_header": "Bearer",
+                "request_format": "multipart",
+                "response_format": "image/png"
+            }
         }
-
 
     def get(self, key: str, default: Any = None) -> Any:
         return self._data.get(key, default)
 
     def set(self, key: str, value: Any) -> None:
         self._data[key] = value
+
+    def record_cloud_request(self, success: bool, quota_status: str = "Normal") -> None:
+        """Record cloud usage statistics safely."""
+        usage = self._data.get("cloud_usage", {
+            "requests_made": 0,
+            "successful_requests": 0,
+            "failed_requests": 0,
+            "quota_status": "Normal"
+        })
+        usage["requests_made"] = usage.get("requests_made", 0) + 1
+        if success:
+            usage["successful_requests"] = usage.get("successful_requests", 0) + 1
+        else:
+            usage["failed_requests"] = usage.get("failed_requests", 0) + 1
+        usage["quota_status"] = quota_status
+        self._data["cloud_usage"] = usage
+        self.save()
 
     def save(self) -> None:
         """Save settings to config file."""

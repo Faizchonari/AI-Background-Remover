@@ -14,10 +14,13 @@ from PySide6.QtWidgets import (
     QPushButton, QTabWidget, QWidget, QCheckBox,
     QComboBox, QSpinBox, QLineEdit, QFileDialog,
     QTableWidget, QTableWidgetItem, QHeaderView,
-    QMessageBox, QFrame
+    QMessageBox, QFrame, QGroupBox, QScrollArea
 )
 
 from app.core.config import ConfigManager
+from app.core.credentials import CredentialStore, mask_token
+from app.processing.backends.providers.huggingface_provider import HuggingFaceProvider
+from app.processing.backends.providers.custom_api_provider import CustomAPIProvider
 from app.system.system_info import SystemInfo
 from app.system.recommendation import ModelRecommendationEngine
 from app.system.dependency_manager import DependencyManager
@@ -41,10 +44,11 @@ class SettingsDialog(QDialog):
         self.config_mgr = config_mgr
         self.sys_info = sys_info
         self.rec_engine = rec_engine
+        self.cred_store = CredentialStore()
 
         self.setWindowTitle("Settings & Dependencies")
-        self.resize(740, 580)
-        self.setMinimumSize(640, 480)
+        self.resize(780, 620)
+        self.setMinimumSize(680, 520)
         self._init_ui()
 
     def _init_ui(self):
@@ -87,6 +91,7 @@ class SettingsDialog(QDialog):
 
         self.tabs.addTab(self._create_general_tab(), "GENERAL")
         self.tabs.addTab(self._create_processing_tab(), "PROCESSING")
+        self.tabs.addTab(self._create_cloud_tab(), "CLOUD PROCESSING")
         self.tabs.addTab(self._create_models_tab(), "MODELS")
         self.tabs.addTab(self._create_system_tab(), "SYSTEM & DEPENDENCIES")
         self.tabs.addTab(self._create_about_tab(), "ABOUT DEVELOPER")
@@ -225,6 +230,236 @@ class SettingsDialog(QDialog):
 
         layout.addStretch()
         return widget
+
+    # 2b. CLOUD PROCESSING TAB
+    def _create_cloud_tab(self) -> QWidget:
+        widget = QWidget()
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+
+        container = QWidget()
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(14)
+
+        # 1. Processing Mode
+        mode_box = QGroupBox("Processing Mode")
+        mode_box.setStyleSheet("QGroupBox { font-weight: 700; color: #38BDF8; border: 1px solid #334155; border-radius: 6px; margin-top: 10px; padding-top: 14px; }")
+        mode_layout = QVBoxLayout(mode_box)
+        mode_layout.setSpacing(8)
+
+        self.cloud_mode_combo = QComboBox()
+        self.cloud_mode_combo.addItem("Local Processing (100% Offline, images stay on PC)", "local")
+        self.cloud_mode_combo.addItem("Cloud Processing (GPU Accelerated, community free tier)", "cloud")
+        self.cloud_mode_combo.addItem("Automatic (Choose based on hardware, network, and consent)", "automatic")
+        curr_m = self.config_mgr.get("processing_mode", "local").lower()
+        idx_m = self.cloud_mode_combo.findData(curr_m)
+        if idx_m >= 0:
+            self.cloud_mode_combo.setCurrentIndex(idx_m)
+        mode_layout.addWidget(self.cloud_mode_combo)
+        layout.addWidget(mode_box)
+
+        # 2. Cloud Provider & Endpoint
+        prov_box = QGroupBox("Cloud Provider & Connection")
+        prov_box.setStyleSheet("QGroupBox { font-weight: 700; color: #38BDF8; border: 1px solid #334155; border-radius: 6px; margin-top: 10px; padding-top: 14px; }")
+        prov_layout = QVBoxLayout(prov_box)
+        prov_layout.setSpacing(10)
+
+        p_lbl = QLabel("Cloud Provider:")
+        p_lbl.setStyleSheet("font-weight: 600; color: #E2E8F0;")
+        prov_layout.addWidget(p_lbl)
+
+        self.cloud_prov_combo = QComboBox()
+        self.cloud_prov_combo.addItem("Hugging Face Spaces (ZeroGPU / Community Free Tier)", "huggingface")
+        self.cloud_prov_combo.addItem("Custom Cloud API (Advanced / Self-Hosted)", "custom_api")
+        curr_p = self.config_mgr.get("cloud_provider", "huggingface")
+        idx_p = self.cloud_prov_combo.findData(curr_p)
+        if idx_p >= 0:
+            self.cloud_prov_combo.setCurrentIndex(idx_p)
+        prov_layout.addWidget(self.cloud_prov_combo)
+
+        ep_lbl = QLabel("Cloud Endpoint URL (HTTPS):")
+        ep_lbl.setStyleSheet("font-weight: 600; color: #E2E8F0;")
+        prov_layout.addWidget(ep_lbl)
+
+        ep_row = QHBoxLayout()
+        self.cloud_ep_edit = QLineEdit(self.config_mgr.get("cloud_endpoint", "https://faizchonari-birefnet-portrait.hf.space"))
+        self.cloud_ep_edit.setStyleSheet("background-color: #0F172A; border: 1px solid #334155; color: #CBD5E1; padding: 6px;")
+        ep_row.addWidget(self.cloud_ep_edit)
+
+        test_btn = QPushButton("Test Connection")
+        test_btn.setObjectName("outlineBtn")
+        test_btn.clicked.connect(self._on_test_cloud_connection)
+        ep_row.addWidget(test_btn)
+        prov_layout.addLayout(ep_row)
+
+        self.conn_result_lbl = QLabel("")
+        self.conn_result_lbl.setStyleSheet("font-size: 11px;")
+        prov_layout.addWidget(self.conn_result_lbl)
+
+        layout.addWidget(prov_box)
+
+        # 3. Authentication (Secure Windows DPAPI Token Storage)
+        auth_box = QGroupBox("Authentication (Optional)")
+        auth_box.setStyleSheet("QGroupBox { font-weight: 700; color: #38BDF8; border: 1px solid #334155; border-radius: 6px; margin-top: 10px; padding-top: 14px; }")
+        auth_layout = QVBoxLayout(auth_box)
+        auth_layout.setSpacing(10)
+
+        token_desc = QLabel("An API token (e.g. Hugging Face Access Token) is optional for public spaces, but increases rate limits.")
+        token_desc.setStyleSheet("color: #94A3B8; font-size: 11px;")
+        auth_layout.addWidget(token_desc)
+
+        token_row = QHBoxLayout()
+        self.token_edit = QLineEdit()
+        self.token_edit.setEchoMode(QLineEdit.Password)
+        self.token_edit.setPlaceholderText("Enter new API token (hf_...)")
+        self.token_edit.setStyleSheet("background-color: #0F172A; border: 1px solid #334155; color: #CBD5E1; padding: 6px;")
+        token_row.addWidget(self.token_edit)
+
+        save_tok_btn = QPushButton("Configure Token")
+        save_tok_btn.setStyleSheet("background-color: #2563EB; color: white; padding: 6px 12px; font-weight: 600;")
+        save_tok_btn.clicked.connect(self._on_configure_token)
+        token_row.addWidget(save_tok_btn)
+
+        del_tok_btn = QPushButton("Remove Credentials")
+        del_tok_btn.setStyleSheet("background-color: #334155; color: #F87171; border: 1px solid #475569; padding: 6px 12px;")
+        del_tok_btn.clicked.connect(self._on_remove_credentials)
+        token_row.addWidget(del_tok_btn)
+        auth_layout.addLayout(token_row)
+
+        curr_hf_token = self.cred_store.get_token("huggingface")
+        self.token_status_lbl = QLabel(f"Stored Credential: <b>{mask_token(curr_hf_token)}</b> (Encrypted with Windows DPAPI)")
+        self.token_status_lbl.setStyleSheet("color: #64748B; font-size: 11px;")
+        auth_layout.addWidget(self.token_status_lbl)
+
+        layout.addWidget(auth_box)
+
+        # 4. Privacy Safeguards
+        priv_box = QGroupBox("Privacy Safeguards")
+        priv_box.setStyleSheet("QGroupBox { font-weight: 700; color: #38BDF8; border: 1px solid #334155; border-radius: 6px; margin-top: 10px; padding-top: 14px; }")
+        priv_layout = QVBoxLayout(priv_box)
+        priv_layout.setSpacing(8)
+
+        self.cb_always_ask = QCheckBox("Always ask before uploading images to the cloud")
+        self.cb_always_ask.setChecked(self.config_mgr.get("cloud_always_ask_upload", True))
+        priv_layout.addWidget(self.cb_always_ask)
+
+        priv_text = (
+            "• <b>Local Processing:</b> Images never leave this computer. No internet required.<br>"
+            "• <b>Cloud Processing:</b> Images are uploaded over HTTPS to the selected provider for AI inference.<br>"
+            "• <b>No Analytics:</b> Images are never uploaded for analytics or stored on third-party storage."
+        )
+        priv_lbl = QLabel(priv_text)
+        priv_lbl.setStyleSheet("color: #94A3B8; font-size: 11px; line-height: 1.4;")
+        priv_layout.addWidget(priv_lbl)
+
+        layout.addWidget(priv_box)
+
+        # 5. Cloud Usage Statistics
+        usage_box = QGroupBox("Cloud Usage & Quota")
+        usage_box.setStyleSheet("QGroupBox { font-weight: 700; color: #38BDF8; border: 1px solid #334155; border-radius: 6px; margin-top: 10px; padding-top: 14px; }")
+        usage_layout = QVBoxLayout(usage_box)
+        usage_layout.setSpacing(6)
+
+        usage_data = self.config_mgr.get("cloud_usage", {})
+        u_made = usage_data.get("requests_made", 0)
+        u_succ = usage_data.get("successful_requests", 0)
+        u_fail = usage_data.get("failed_requests", 0)
+        u_quota = usage_data.get("quota_status", "Normal")
+
+        usage_lbl = QLabel(
+            f"<b>Requests Made:</b> {u_made}  •  <b>Successful:</b> {u_succ}  •  <b>Failed:</b> {u_fail}<br>"
+            f"<b>Quota Status:</b> <span style='color: {'#4ADE80' if u_quota == 'Normal' else '#F59E0B'};'>{u_quota}</span><br>"
+            f"<b>Usage Cost:</b> Free Community Tier (No payment method stored or required)"
+        )
+        usage_lbl.setStyleSheet("color: #CBD5E1; font-size: 11px;")
+        usage_layout.addWidget(usage_lbl)
+        layout.addWidget(usage_box)
+
+        # 6. Advanced Custom API
+        adv_box = QGroupBox("Advanced: Custom Cloud API Settings")
+        adv_box.setStyleSheet("QGroupBox { font-weight: 700; color: #94A3B8; border: 1px solid #334155; border-radius: 6px; margin-top: 10px; padding-top: 14px; }")
+        adv_layout = QVBoxLayout(adv_box)
+        adv_layout.setSpacing(8)
+
+        custom_cfg = self.config_mgr.get("custom_api", {})
+        adv_ep_lbl = QLabel("Custom API Endpoint:")
+        adv_ep_lbl.setStyleSheet("font-size: 11px; color: #E2E8F0;")
+        adv_layout.addWidget(adv_ep_lbl)
+
+        self.custom_ep_edit = QLineEdit(custom_cfg.get("endpoint", ""))
+        self.custom_ep_edit.setPlaceholderText("https://your-custom-api.example.com/api/remove-background")
+        self.custom_ep_edit.setStyleSheet("background-color: #0F172A; border: 1px solid #334155; color: #CBD5E1; padding: 5px;")
+        adv_layout.addWidget(self.custom_ep_edit)
+
+        adv_hdr_lbl = QLabel("Auth Header Type:")
+        adv_hdr_lbl.setStyleSheet("font-size: 11px; color: #E2E8F0;")
+        adv_layout.addWidget(adv_hdr_lbl)
+
+        self.custom_hdr_combo = QComboBox()
+        self.custom_hdr_combo.addItem("Bearer", "Bearer")
+        self.custom_hdr_combo.addItem("X-API-Key", "X-API-Key")
+        self.custom_hdr_combo.addItem("None", "None")
+        curr_hdr = custom_cfg.get("auth_header", "Bearer")
+        idx_h = self.custom_hdr_combo.findData(curr_hdr)
+        if idx_h >= 0:
+            self.custom_hdr_combo.setCurrentIndex(idx_h)
+        adv_layout.addWidget(self.custom_hdr_combo)
+
+        layout.addWidget(adv_box)
+
+        layout.addStretch()
+        scroll.setWidget(container)
+
+        tab_widget = QWidget()
+        tab_layout = QVBoxLayout(tab_widget)
+        tab_layout.setContentsMargins(0, 0, 0, 0)
+        tab_layout.addWidget(scroll)
+        return tab_widget
+
+    def _on_test_cloud_connection(self):
+        """Test reachability of configured cloud endpoint."""
+        prov_id = self.cloud_prov_combo.currentData()
+        endpoint = self.cloud_ep_edit.text().strip()
+
+        self.conn_result_lbl.setText("Testing connection...")
+        self.conn_result_lbl.setStyleSheet("color: #38BDF8; font-size: 11px;")
+
+        if prov_id == "huggingface":
+            provider = HuggingFaceProvider(endpoint_url=endpoint, credential_store=self.cred_store)
+        else:
+            provider = CustomAPIProvider(endpoint_url=endpoint, credential_store=self.cred_store)
+
+        is_ok, msg = provider.test_connection()
+        if is_ok:
+            self.conn_result_lbl.setText(f"✓ {msg}")
+            self.conn_result_lbl.setStyleSheet("color: #4ADE80; font-weight: bold; font-size: 11px;")
+        else:
+            self.conn_result_lbl.setText(f"✗ {msg}")
+            self.conn_result_lbl.setStyleSheet("color: #EF4444; font-weight: bold; font-size: 11px;")
+
+    def _on_configure_token(self):
+        """Securely store token in Windows DPAPI credential store."""
+        token = self.token_edit.text().strip()
+        if not token:
+            QMessageBox.warning(self, "Notice", "Please enter a token first.")
+            return
+
+        prov_id = self.cloud_prov_combo.currentData()
+        self.cred_store.set_token(prov_id, token)
+        self.token_edit.clear()
+        self.token_status_lbl.setText(f"Stored Credential: <b>{mask_token(token)}</b> (Encrypted with Windows DPAPI)")
+        QMessageBox.information(self, "Saved", f"API token securely saved with Windows DPAPI encryption.")
+
+    def _on_remove_credentials(self):
+        """Remove stored credentials."""
+        prov_id = self.cloud_prov_combo.currentData()
+        if self.cred_store.remove_token(prov_id):
+            self.token_status_lbl.setText("Stored Credential: <b>Not Set</b>")
+            QMessageBox.information(self, "Removed", "Stored credentials have been removed.")
+        else:
+            QMessageBox.information(self, "Notice", "No credentials were stored for this provider.")
 
     # 3. MODELS TAB
     def _create_models_tab(self) -> QWidget:
@@ -459,6 +694,18 @@ class SettingsDialog(QDialog):
         self.config_mgr.set("memory_safeguard", self.cb_mem_safeguard.isChecked())
 
         self.config_mgr.set("model_storage_dir", self.storage_edit.text())
+
+        # Cloud Settings
+        self.config_mgr.set("processing_mode", self.cloud_mode_combo.currentData())
+        self.config_mgr.set("cloud_provider", self.cloud_prov_combo.currentData())
+        self.config_mgr.set("cloud_endpoint", self.cloud_ep_edit.text().strip())
+        self.config_mgr.set("cloud_always_ask_upload", self.cb_always_ask.isChecked())
+
+        custom_cfg = self.config_mgr.get("custom_api", {})
+        custom_cfg["endpoint"] = self.custom_ep_edit.text().strip()
+        custom_cfg["auth_header"] = self.custom_hdr_combo.currentData()
+        self.config_mgr.set("custom_api", custom_cfg)
+
         self.config_mgr.save()
 
         self.settings_saved.emit()

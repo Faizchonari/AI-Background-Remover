@@ -63,7 +63,7 @@ def main():
 
     app = QApplication(sys.argv)
     app.setApplicationName("AI Background Remover")
-    app.setApplicationVersion("1.1.0")
+    app.setApplicationVersion("1.2.0")
     app.setOrganizationName("LocalAI")
 
     # Apply global modern dark theme

@@ -47,6 +47,16 @@ This application bundles, links to, or interfaces with several open-source libra
 - **Copyright**: (c) 2005-present, NumPy Developers
 - **Website**: https://numpy.org
 
+### FastAPI & Uvicorn (Cloud Server Components)
+- **License**: MIT License
+- **Copyright**: (c) 2018-present, Sebastián Ramírez / Encode OSS Ltd.
+- **Website**: https://fastapi.tiangolo.com
+
+### Gradio (Cloud Server Components)
+- **License**: Apache License 2.0
+- **Copyright**: (c) 2018-present, Gradio Team and Hugging Face Inc.
+- **Website**: https://gradio.app
+
 ---
 
 ## 2. Machine Learning Model Weights
