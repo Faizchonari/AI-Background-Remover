@@ -6,12 +6,12 @@ thumbnail rendering, status badges, and item removal.
 
 from pathlib import Path
 from typing import Optional
-from PySide6.QtCore import Qt, Signal, QSize
-from PySide6.QtGui import QIcon, QPixmap, QDragEnterEvent, QDropEvent
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QPixmap, QDragEnterEvent, QDropEvent
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QPushButton, QTableWidget, QTableWidgetItem,
-    QHeaderView, QFileDialog, QAbstractItemView
+    QPushButton, QTableWidget, QHeaderView,
+    QFileDialog, QAbstractItemView
 )
 
 from app.processing.batch_worker import QueueItem

@@ -22,14 +22,14 @@ if exist "%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe" (
     )
 )
 
-if "%ISCC%"=="" (
-    echo [ERROR] Inno Setup 6 (ISCC.exe) was not found.
+if not defined ISCC (
+    echo [ERROR] Inno Setup 6 ISCC compiler was not found.
     echo Please install Inno Setup 6 from https://jrsoftware.org/isdl.php
     exit /b 1
 )
 
-if not exist "dist\AI-Background-Remover\AI-Background-Remover.exe" (
-    echo [WARNING] dist\AI-Background-Remover\AI-Background-Remover.exe not found.
+if not exist "dist\AI-Background-Remover\AI Background Remover.exe" (
+    echo [WARNING] Application executable not found in dist.
     echo Building executable first...
     call "%~dp0build_executable.bat"
     if !errorlevel! neq 0 exit /b !errorlevel!
@@ -37,12 +37,12 @@ if not exist "dist\AI-Background-Remover\AI-Background-Remover.exe" (
 
 if not exist "release" mkdir release
 
-echo Compiling installer using: "%ISCC%"
-"%ISCC%" "installer\inno_setup_script.iss"
+echo Compiling installer using: !ISCC!
+"!ISCC!" "installer\inno_setup_script.iss"
 
-if %errorlevel% neq 0 (
-    echo [ERROR] Inno Setup compilation failed with exit code %errorlevel%.
-    exit /b %errorlevel%
+if !errorlevel! neq 0 (
+    echo [ERROR] Inno Setup compilation failed with exit code !errorlevel!.
+    exit /b !errorlevel!
 )
 
 echo.

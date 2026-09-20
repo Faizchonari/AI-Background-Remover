@@ -35,7 +35,7 @@ hiddenimports = [
     'timm',
     'einops',
     'kornia',
-    'psutil',
+    'app.gui.about_dialog',
     'PySide6.QtCore',
     'PySide6.QtGui',
     'PySide6.QtWidgets',

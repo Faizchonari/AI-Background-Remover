@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-09-20
+
+### Added
+- **About Me / Developer Section**:
+  - Added dedicated About dialog accessible from header bar and Settings dialog.
+  - Included developer profile with circular avatar, role, description, and direct links to GitHub profile and project repository.
+  - Bundled offline avatar resource in `assets/developer_avatar.png` ensuring 100% offline functionality after installation.
+- **Automated Tests**:
+  - Added unit test suite `tests/test_about_dialog.py` verifying dialog initialization, circular avatar clipping, and offline fallback rendering.
+
+### Changed & Cleaned Up
+- **Codebase Optimization**:
+  - Removed obsolete prototype `app/downloads/model_downloader.py`.
+  - Cleaned up unused imports across `download_manager.py`, `main_window.py`, `model_manager_dialog.py`, `preview_widget.py`, `queue_widget.py`, `settings_dialog.py`, `metadata.py`, `dependency_manager.py`, `recommendation.py`, and `system_info.py`.
+  - Removed unused `psutil` hidden import from `ai_background_remover.spec`.
+  - Moved `pyinstaller` exclusively to `requirements-dev.txt` keeping `requirements.txt` strictly runtime-focused.
+
+---
+
 ## [1.0.0] - 2026-09-20
 
 ### Added

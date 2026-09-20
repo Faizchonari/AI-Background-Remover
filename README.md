@@ -3,9 +3,11 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11-brightgreen.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2011%20%7C%2010%20(64--bit)-lightgrey.svg)](https://www.microsoft.com/windows)
-[![Release](https://img.shields.io/badge/Release-v1.0.0-orange.svg)](https://github.com/Faizchonari/AI-Background-Remover/releases)
+[![Release](https://img.shields.io/badge/Release-v1.1.0-orange.svg)](https://github.com/Faizchonari/AI-Background-Remover/releases)
 
 > **Fast, private, and high-precision desktop AI background removal running 100% locally on Windows.**
+>
+> *Once the required models and dependencies are installed, image processing can run completely offline.*
 
 ---
 
@@ -30,9 +32,10 @@
 - **Batch Processing Queue**: Drag-and-drop or select multiple JPG, JPEG, PNG, and WEBP images.
 - **Resilient Pipeline**: Individual image failures (e.g. corrupted files) are captured gracefully without stopping the batch queue.
 - **Interactive Split-View Preview**: Before/after comparison slider with transparency checkerboard, zoom controls, and fit-to-window.
-- **100% Offline & Private**: All inference and logging occur strictly on your local machine. No telemetry, no cloud uploads.
+- **100% Offline & Private**: All inference and logging occur strictly on your local machine. No telemetry, no cloud uploads. Once models are installed, no internet is required.
 - **Integrated Model Manager**: Atomic chunked downloading with SHA256 integrity verification and model update management.
 - **Recommendation Engine**: Suggests optimal models based on content type and available system hardware.
+- **About Developer Section**: Integrated About Me dialog and Settings tab showcasing developer profile, offline GitHub avatar, and project links.
 - **Diagnostic & Repair Tools**: Built-in dependency manager and hardware inspector to verify and maintain the AI runtime.
 - **Zero-Setup Installer**: Clean Windows installer (`AI-Background-Remover-Setup.exe`) that sets up shortcuts and preserves model weights across updates.
 

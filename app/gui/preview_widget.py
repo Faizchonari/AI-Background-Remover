@@ -14,12 +14,12 @@ from typing import Optional
 
 from PySide6.QtCore import Qt, QRect, QRectF, QPoint, QPointF, Signal
 from PySide6.QtGui import (
-    QPainter, QColor, QBrush, QPen, QPixmap, QImage,
+    QPainter, QColor, QBrush, QPen, QPixmap,
     QMouseEvent, QWheelEvent, QPaintEvent, QFont
 )
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QPushButton, QFrame, QButtonGroup
+    QPushButton, QFrame
 )
 
 from app.processing.batch_worker import QueueItem

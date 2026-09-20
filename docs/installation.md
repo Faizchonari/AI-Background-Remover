@@ -16,8 +16,10 @@ The Windows installer (`AI-Background-Remover-Setup.exe`) is completely standalo
 5. Click **Install**.
 6. Launch **AI Background Remover** from the Start Menu or Desktop.
 
-> **Model Weights Notice:**
-> The installer does **not** bundle multiple gigabytes of AI models by default to keep the download light. On first launch, navigate to **Model Manager** or select a model in the processing queue to download your desired model (e.g. BiRefNet Portrait or General). Downloaded models are safely stored in your local directory and preserved across application updates and uninstalls.
+> **Model Weights & Offline Usage Notice:**
+> The installer does **not** bundle multiple gigabytes of AI models by default to keep the initial download light. On first launch, navigate to **Model Manager** or select a model in the processing queue to download your desired model (e.g. BiRefNet Portrait or General). Downloaded models are safely stored in your local directory and preserved across application updates and uninstalls.
+>
+> **Once the required models and dependencies are installed, image processing can run completely offline.**
 
 ---
 

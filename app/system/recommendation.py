@@ -7,7 +7,6 @@ recommend the most optimal background removal model and processing device.
 
 from dataclasses import dataclass, field
 import json
-import os
 from pathlib import Path
 from typing import Optional
 

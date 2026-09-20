@@ -37,7 +37,7 @@ class ConfigManager:
         # Defaults
         self._data = {
             "app_name": "AI Background Remover",
-            "version": "1.0.0",
+            "version": "1.1.0",
             "default_model": "birefnet-portrait",
             "input_dir": str(self.base_dir / "input"),
             "output_dir": str(self.base_dir / "output"),
@@ -45,6 +45,15 @@ class ConfigManager:
             "theme": "dark",
             "auto_detect_hardware": True,
             "max_cpu_threads": 6,
+            "developer": {
+                "name": "Faiz",
+                "role": "Developer / Creator",
+                "description": "Creator of AI Background Remover. Passionate about building fast, local-first, privacy-focused desktop AI applications.",
+                "github_username": "Faizchonari",
+                "github_profile_url": "https://github.com/Faizchonari",
+                "project_repo_url": "https://github.com/Faizchonari/AI-Background-Remover",
+                "avatar_path": "assets/developer_avatar.png"
+            },
             # GENERAL
             "auto_open_output": False,
             "remember_selected_model": True,

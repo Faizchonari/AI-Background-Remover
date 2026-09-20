@@ -5,12 +5,11 @@ Displays model metadata, hardware requirements, real-time download metrics,
 and system compatibility assessments.
 """
 
-from pathlib import Path
-from PySide6.QtCore import Qt, Signal, QObject
+from PySide6.QtCore import Signal, QObject
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QFrame, QScrollArea, QWidget,
-    QProgressBar, QMessageBox, QTabWidget
+    QProgressBar, QMessageBox
 )
 
 from app.models.metadata import ModelMetadata

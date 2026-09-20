@@ -4,7 +4,7 @@ Defines the comprehensive metadata contract required for every AI model in the r
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from app.system.system_info import SystemInfo

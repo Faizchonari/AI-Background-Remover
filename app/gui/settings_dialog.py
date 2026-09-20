@@ -7,24 +7,22 @@ Sections:
 - SYSTEM: Hardware info, compatibility test, dependency table, repair installation.
 """
 
-from pathlib import Path
-from typing import Optional
-
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QColor, QFont
+from PySide6.QtCore import Qt, Signal, QUrl
+from PySide6.QtGui import QColor, QFont, QDesktopServices, QPixmap
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QTabWidget, QWidget, QCheckBox,
     QComboBox, QSpinBox, QLineEdit, QFileDialog,
     QTableWidget, QTableWidgetItem, QHeaderView,
-    QMessageBox, QFrame, QProgressBar
+    QMessageBox, QFrame
 )
 
 from app.core.config import ConfigManager
 from app.system.system_info import SystemInfo
 from app.system.recommendation import ModelRecommendationEngine
-from app.system.dependency_manager import DependencyManager, DependencyInfo
+from app.system.dependency_manager import DependencyManager
 from app.gui.system_dialog import SystemDetailsDialog
+from app.gui.about_dialog import get_circular_avatar, create_initials_avatar, _get_project_root
 
 
 class SettingsDialog(QDialog):
@@ -91,6 +89,7 @@ class SettingsDialog(QDialog):
         self.tabs.addTab(self._create_processing_tab(), "PROCESSING")
         self.tabs.addTab(self._create_models_tab(), "MODELS")
         self.tabs.addTab(self._create_system_tab(), "SYSTEM & DEPENDENCIES")
+        self.tabs.addTab(self._create_about_tab(), "ABOUT DEVELOPER")
 
         root_layout.addWidget(self.tabs, stretch=1)
 
@@ -464,3 +463,78 @@ class SettingsDialog(QDialog):
 
         self.settings_saved.emit()
         self.accept()
+
+    def _create_about_tab(self) -> QWidget:
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(20, 16, 20, 16)
+        layout.setSpacing(10)
+        layout.setAlignment(Qt.AlignHCenter)
+
+        dev_info = self.config_mgr.get("developer", {})
+        dev_name = dev_info.get("name", "Faiz")
+        dev_role = dev_info.get("role", "Developer / Creator")
+        dev_desc = dev_info.get(
+            "description",
+            "Creator of AI Background Remover. Passionate about building fast, "
+            "local-first, privacy-focused desktop AI applications."
+        )
+        github_user = dev_info.get("github_username", "Faizchonari")
+        github_url = dev_info.get("github_profile_url", f"https://github.com/{github_user}")
+        repo_url = dev_info.get("project_repo_url", f"https://github.com/{github_user}/AI-Background-Remover")
+        avatar_rel_path = dev_info.get("avatar_path", "assets/developer_avatar.png")
+
+        # Avatar
+        avatar_lbl = QLabel()
+        avatar_lbl.setAlignment(Qt.AlignCenter)
+        avatar_path = _get_project_root() / avatar_rel_path
+        if avatar_path.is_file():
+            avatar_lbl.setPixmap(get_circular_avatar(QPixmap(str(avatar_path)), size=90))
+        else:
+            initials = dev_name[:2].upper() if dev_name else "AI"
+            avatar_lbl.setPixmap(create_initials_avatar(initials, size=90))
+        layout.addWidget(avatar_lbl)
+
+        # Name & Role
+        name_lbl = QLabel(dev_name)
+        name_lbl.setAlignment(Qt.AlignCenter)
+        name_lbl.setStyleSheet("font-size: 18px; font-weight: 800; color: #F8FAFC;")
+        layout.addWidget(name_lbl)
+
+        role_lbl = QLabel(dev_role)
+        role_lbl.setAlignment(Qt.AlignCenter)
+        role_lbl.setStyleSheet("font-size: 12px; font-weight: 600; color: #38BDF8;")
+        layout.addWidget(role_lbl)
+
+        desc_lbl = QLabel(dev_desc)
+        desc_lbl.setAlignment(Qt.AlignCenter)
+        desc_lbl.setWordWrap(True)
+        desc_lbl.setStyleSheet("font-size: 12px; color: #94A3B8; max-width: 500px;")
+        layout.addWidget(desc_lbl)
+
+        # Links
+        links_layout = QHBoxLayout()
+        links_layout.setSpacing(12)
+        links_layout.setAlignment(Qt.AlignCenter)
+
+        gh_btn = QPushButton("GitHub Profile")
+        gh_btn.setObjectName("outlineBtn")
+        gh_btn.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(github_url)))
+        links_layout.addWidget(gh_btn)
+
+        repo_btn = QPushButton("Project Repository")
+        repo_btn.setObjectName("outlineBtn")
+        repo_btn.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(repo_url)))
+        links_layout.addWidget(repo_btn)
+
+        layout.addLayout(links_layout)
+        layout.addStretch()
+
+        # App version
+        ver = self.config_mgr.get("version", "1.1.0")
+        ver_lbl = QLabel(f"AI Background Remover  •  v{ver}\n100% Offline AI Image Processing")
+        ver_lbl.setAlignment(Qt.AlignCenter)
+        ver_lbl.setStyleSheet("font-size: 11px; color: #64748B;")
+        layout.addWidget(ver_lbl)
+
+        return widget

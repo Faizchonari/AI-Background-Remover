@@ -38,7 +38,7 @@ The codebase is organized in clean modular layers:
 AI-Background-Remover/
 ├── app/
 │   ├── core/           # Configuration management (config.py)
-│   ├── gui/            # PySide6 UI (main_window, preview, settings, model_manager_dialog)
+│   ├── gui/            # PySide6 UI (main_window, preview, settings, model_manager_dialog, about_dialog)
 │   ├── models/         # Model wrappers, registry, download manager, recommendations
 │   ├── processing/     # Image processing pipeline, batch worker, thread management
 │   ├── system/         # Dependency manager, hardware inspection, repair utilities

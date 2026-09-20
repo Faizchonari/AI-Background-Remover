@@ -10,7 +10,6 @@ from pathlib import Path
 import sys
 from typing import Optional
 from PIL import Image
-import numpy as np
 
 from app.models.metadata import ModelMetadata
 from app.models.base_model import BackgroundRemovalModel
@@ -29,7 +28,7 @@ class BiRefNetPortraitModel(BackgroundRemovalModel):
                 display_name="BiRefNet Portrait",
                 description="Specialized high-resolution segmentation model optimized for human portraits and fine hair details.",
                 category="Portrait / Hair",
-                version="1.0.0",
+                version="1.1.0",
                 minimum_ram=6.0,
                 recommended_ram=12.0,
                 gpu_requirements="Optional: 4GB+ VRAM for CUDA. Fully supports multi-threaded CPU inference.",

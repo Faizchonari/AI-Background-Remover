@@ -10,13 +10,12 @@ Implements the complete user interface:
 - Output folder direct launch
 """
 
-import os
 from pathlib import Path
 import sys
 from typing import Optional
 
 from PySide6.QtCore import Qt, QUrl
-from PySide6.QtGui import QPixmap, QDesktopServices, QDragEnterEvent, QDropEvent
+from PySide6.QtGui import QDesktopServices, QDragEnterEvent, QDropEvent
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QComboBox, QFrame,
@@ -28,9 +27,10 @@ from app.system.system_info import SystemInfo, get_system_info
 from app.system.recommendation import ModelRecommendationEngine, RecommendationResult
 from app.gui.system_dialog import SystemDetailsDialog
 from app.gui.model_manager_dialog import ModelManagerDialog
-from app.gui.queue_widget import QueueWidget, SUPPORTED_EXTENSIONS
+from app.gui.queue_widget import QueueWidget
 from app.gui.preview_widget import InteractivePreviewWidget
 from app.gui.settings_dialog import SettingsDialog
+from app.gui.about_dialog import AboutDialog
 from app.core.config import ConfigManager
 from app.models.registry import ModelRegistry
 from app.models.birefnet_portrait import BiRefNetPortraitModel
@@ -173,6 +173,11 @@ class MainWindow(QMainWindow):
         settings_btn.setObjectName("outlineBtn")
         settings_btn.clicked.connect(self._open_settings)
         header.addWidget(settings_btn)
+
+        about_btn = QPushButton("About ℹ")
+        about_btn.setObjectName("outlineBtn")
+        about_btn.clicked.connect(self._open_about)
+        header.addWidget(about_btn)
 
         return header
 
@@ -533,6 +538,10 @@ class MainWindow(QMainWindow):
             parent=self
         )
         dialog.settings_saved.connect(self._on_settings_saved)
+        dialog.exec()
+
+    def _open_about(self):
+        dialog = AboutDialog(self.config_mgr, self)
         dialog.exec()
 
     def _on_settings_saved(self):

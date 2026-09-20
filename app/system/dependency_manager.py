@@ -9,7 +9,6 @@ from dataclasses import dataclass
 import importlib.metadata
 import importlib.util
 import os
-from pathlib import Path
 import subprocess
 import sys
 from typing import Callable, Optional

@@ -180,13 +180,14 @@ class TestSettingsDialog(unittest.TestCase):
         self.temp_dir.cleanup()
 
     def test_tabs_initialization(self):
-        """Verify that all 4 settings tabs are initialized."""
-        self.assertEqual(self.dialog.tabs.count(), 4)
-        tab_titles = [self.dialog.tabs.tabText(i) for i in range(4)]
+        """Verify that all 5 settings tabs are initialized."""
+        self.assertEqual(self.dialog.tabs.count(), 5)
+        tab_titles = [self.dialog.tabs.tabText(i) for i in range(5)]
         self.assertIn("GENERAL", tab_titles)
         self.assertIn("PROCESSING", tab_titles)
         self.assertIn("MODELS", tab_titles)
         self.assertIn("SYSTEM & DEPENDENCIES", tab_titles)
+        self.assertIn("ABOUT DEVELOPER", tab_titles)
 
     def test_dependency_table_populated(self):
         """Verify the dependency table in System tab displays all 7 components."""

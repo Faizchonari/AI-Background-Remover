@@ -16,9 +16,6 @@ timm>=0.9.16
 einops>=0.7.0
 kornia>=0.7.0
 
-# Packaging
-pyinstaller>=6.5.0
-
 # Note on PyTorch for CPU Inference:
 # To install CPU-optimized PyTorch on Windows (saves ~2GB of unused CUDA binaries):
 # pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
