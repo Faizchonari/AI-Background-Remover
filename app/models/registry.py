@@ -216,18 +216,38 @@ class ModelRegistry:
         return [m for m in self._registry.values() if m.installed_status and m.local_or_cloud == "local"]
 
     def _check_installed(self, model_id: str) -> bool:
-        """Check if model files exist in local storage (or is cloud model)."""
+        """Check if model files exist in local storage (or is cloud model).
+
+        Detects models stored in either flat directory format (model_storage/{model_id}/)
+        or HuggingFace Hub cache format (model_storage/models--{org}--{name}/snapshots/).
+        """
         meta = self._registry.get(model_id)
         if meta and meta.local_or_cloud == "cloud":
             meta.installed_status = True
             return True
 
-        model_dir = self.storage_dir / model_id
         is_installed = False
+
+        # Check 1: Flat directory (model_storage/{model_id}/)
+        model_dir = self.storage_dir / model_id
         if model_dir.is_dir():
-            # Model is considered installed if directory exists and contains files
             files = [f for f in model_dir.iterdir() if f.is_file()]
             is_installed = len(files) > 0
+
+        # Check 2: HuggingFace Hub cache format (model_storage/models--{org}--{name}/)
+        if not is_installed and meta and meta.download_source:
+            hf_cache_name = "models--" + meta.download_source.replace("/", "--")
+            hf_cache_dir = self.storage_dir / hf_cache_name
+            if hf_cache_dir.is_dir():
+                snapshots_dir = hf_cache_dir / "snapshots"
+                if snapshots_dir.is_dir():
+                    # Check if any snapshot contains model files
+                    for snapshot in snapshots_dir.iterdir():
+                        if snapshot.is_dir():
+                            snapshot_files = [f for f in snapshot.iterdir() if f.is_file()]
+                            if snapshot_files:
+                                is_installed = True
+                                break
 
         if meta:
             meta.installed_status = is_installed

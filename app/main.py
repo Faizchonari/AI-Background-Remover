@@ -7,6 +7,7 @@ Includes a global exception hook to ensure errors never silently close the app.
 
 from pathlib import Path
 import sys
+import threading
 import traceback
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import QApplication, QMessageBox
@@ -49,8 +50,11 @@ def global_exception_hook(exctype, value, tb):
 
 def main():
     """Application entry point."""
-    # Register global exception hook
+    # Register global exception hooks for BOTH main thread and worker threads
     sys.excepthook = global_exception_hook
+    threading.excepthook = lambda args: global_exception_hook(
+        args.exc_type, args.exc_value, args.exc_traceback
+    )
 
     logger.info("=========================================")
     logger.info("AI Background Remover: Application Startup")

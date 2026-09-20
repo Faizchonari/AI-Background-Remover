@@ -21,7 +21,7 @@ logger = get_logger()
 class BiRefNetPortraitModel(BackgroundRemovalModel):
     """Implementation of ZhengPeng7/BiRefNet-portrait."""
 
-    def __init__(self, metadata: Optional[ModelMetadata] = None, storage_dir: Optional[Path | str] = None):
+    def __init__(self, metadata: Optional[ModelMetadata] = None, storage_dir: Optional[Path | str] = None, device: str = "cpu"):
         if metadata is None:
             metadata = ModelMetadata(
                 model_id="birefnet-portrait",
@@ -40,7 +40,7 @@ class BiRefNetPortraitModel(BackgroundRemovalModel):
                 license_information="Apache 2.0",
                 installed_status=False
             )
-        super().__init__(metadata=metadata)
+        super().__init__(metadata=metadata, device=device)
         if storage_dir:
             self.storage_dir = Path(storage_dir)
         else:
