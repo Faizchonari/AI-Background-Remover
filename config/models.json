@@ -1,0 +1,65 @@
+{
+  "models": [
+    {
+      "id": "birefnet-portrait",
+      "name": "BiRefNet Portrait",
+      "category": "Portrait/Hair",
+      "min_ram_gb": 6.0,
+      "recommended_ram_gb": 12.0,
+      "min_vram_mb": 4096,
+      "supports_cpu": true,
+      "cpu_threads_optimal": 6,
+      "resolution": "1024x1024",
+      "complexity": "medium",
+      "description": "Specialized high-resolution segmentation model optimized for human portraits, hair strands, and transparent fabric.",
+      "reason_template": "Suitable for portrait images and available system memory ({ram_available:.1f} GB free)."
+    },
+    {
+      "id": "rmbg-1.4",
+      "name": "RMBG-1.4",
+      "category": "Balanced",
+      "min_ram_gb": 4.0,
+      "recommended_ram_gb": 8.0,
+      "min_vram_mb": 2048,
+      "supports_cpu": true,
+      "cpu_threads_optimal": 6,
+      "resolution": "1024x1024",
+      "complexity": "medium",
+      "description": "General purpose state-of-the-art background remover providing excellent edge precision and processing speed.",
+      "reason_template": "Optimal balance between processing speed and edge precision for multi-core CPUs ({cpu_cores} cores)."
+    },
+    {
+      "id": "birefnet-general",
+      "name": "BiRefNet General",
+      "category": "High Quality",
+      "min_ram_gb": 8.0,
+      "recommended_ram_gb": 16.0,
+      "min_vram_mb": 6144,
+      "supports_cpu": true,
+      "cpu_threads_optimal": 8,
+      "resolution": "2048x2048",
+      "complexity": "high",
+      "description": "Ultra-high resolution background removal for complex subjects, commercial photography, and e-commerce.",
+      "reason_template": "Maximum detail and boundary accuracy for systems with sufficient RAM ({ram_total:.0f} GB total)."
+    },
+    {
+      "id": "modnet-mobile",
+      "name": "MODNet Mobile",
+      "category": "Lightweight",
+      "min_ram_gb": 2.0,
+      "recommended_ram_gb": 4.0,
+      "min_vram_mb": 1024,
+      "supports_cpu": true,
+      "cpu_threads_optimal": 4,
+      "resolution": "512x512",
+      "complexity": "low",
+      "description": "Extremely fast and lightweight matting model designed for rapid processing and low-memory environments.",
+      "reason_template": "Lightweight model selected for fast processing and minimal memory footprint."
+    }
+  ],
+  "preferences": {
+    "prefer_portrait_for_general": true,
+    "min_free_ram_headroom_gb": 1.5,
+    "cpu_inference_thread_cap": 12
+  }
+}

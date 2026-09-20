@@ -1,0 +1,10 @@
+# Development and Testing Dependencies for AI Background Remover
+
+-r requirements.txt
+
+# Testing & Linting
+pytest>=8.0.0
+flake8>=7.0.0
+
+# Build and Packaging Tools
+pyinstaller>=6.5.0

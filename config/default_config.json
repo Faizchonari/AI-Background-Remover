@@ -1,0 +1,11 @@
+{
+  "app_name": "AI Background Remover",
+  "version": "1.0.0",
+  "default_model": "birefnet-portrait",
+  "input_dir": "input",
+  "output_dir": "output",
+  "model_storage_dir": "model_storage",
+  "theme": "dark",
+  "auto_detect_hardware": true,
+  "max_cpu_threads": 6
+}

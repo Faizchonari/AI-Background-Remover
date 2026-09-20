@@ -1,0 +1,76 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+# Do not ignore project spec file
+*.spec
+!ai_background_remover.spec
+
+# Installer & Release output
+installer_output/
+release/*
+!release/.gitkeep
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Model Storage (Large AI weight files - models must be downloaded via Model Manager)
+model_storage/*
+!model_storage/.gitkeep
+
+# User Input & Output Directories
+input/*
+!input/.gitkeep
+output/*
+!output/.gitkeep
+test_output/
+test_input/
+
+# Logs
+logs/*
+!logs/.gitkeep
+*.log
+
+# Scratch / Debug reproduction scripts
+debug_reproduce.py
+verify_fix.py
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

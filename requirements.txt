@@ -1,0 +1,27 @@
+# AI Background Remover - Project Dependencies
+# Target Environment: Windows 11 (64-bit), Python 3.12, AMD Ryzen 5 5500U (CPU Inference)
+
+# Desktop GUI Framework
+PySide6>=6.6.0
+
+# Image Processing
+Pillow>=10.2.0
+opencv-python-headless>=4.9.0.80
+numpy>=1.26.0
+
+# Model Downloading & Version Management
+huggingface-hub>=0.21.0
+transformers>=4.40.0
+timm>=0.9.16
+einops>=0.7.0
+kornia>=0.7.0
+
+# Packaging
+pyinstaller>=6.5.0
+
+# Note on PyTorch for CPU Inference:
+# To install CPU-optimized PyTorch on Windows (saves ~2GB of unused CUDA binaries):
+# pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+torch>=2.2.0
+torchvision>=0.17.0
+
